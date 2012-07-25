@@ -1,3 +1,5 @@
+//http://www.electronicsblog.net/simple-angle-meter-using-adxl335-accelerometer-arduino/
+
 class CalibrateSensor
 {
   // define constants

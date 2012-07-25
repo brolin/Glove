@@ -1,3 +1,5 @@
+//https://github.com/brolin/Glove
+
 import processing.serial.*;
 
 int bgcolor;                 // Background color
@@ -24,6 +26,9 @@ int last_time = 0;
 boolean nuevaTrama = false;
 /*Packet time_;
 int tempo;*/
+PFont f;
+int tempo;
+PrintWriter output;
 void setup() {
   size(700, 700, P3D);  // Stage size
   noStroke();      // No border on the next thing drawn
@@ -41,16 +46,27 @@ void setup() {
   // is always my  FTDI adaptor, so I open Serial.list()[0].
   // On Windows machines, this generally opens COM1.
   // Open whatever port is the one you're using.
-  String portName = Serial.list()[1];
+  String portName = Serial.list()[0];
   myPort = new Serial(this, portName, 9600);
   //frameRate(15);
 
   //initialize mapping
  
   map_values = new MapValues(width, height);
+  
+  f = loadFont("CourierNew36.vlw");
+  textFont(f, 14);
+  output = createWriter("positions.txt");
+  
+   output.print("Tiempo" + "," + "energiaX" + "," + "EnergiaY" + "," + "energiaZ" + ",");
+   output.println("last_valX" + "," + "last_valY" + "," + "last_valZ"
+   
+   );
 }
 
 void draw() {
+  tempo = millis() %1000;
+  println(tempo);
 /* usar tiempo en el futuro
   tempo= millis() %1000;
   time_.setTime(tempo);
@@ -65,13 +81,15 @@ void draw() {
 
     //calibrate adxl335 values 
     map_values.update_calib(valX,valY,valZ);
-    map_values.scan_movement();
-    map_values.mapForces();
+    
+    map_values.setDirections();
+   output.print(last_time + "," + map_values.getPosition().valX + "," + map_values.getPosition().valY + "," + map_values.getPosition().valZ + ",");
+   output.println(last_valX + "," + last_valY + "," + last_valZ);
     //map_values.draw();
-
+    //output.println();
 
     //linea blanca X
-    /*stroke(255);
+    stroke(255);
     line(last_time, last_valX, time, valX);
     stroke(255, 0, 0);
     //linea roja Y
@@ -80,22 +98,38 @@ void draw() {
     //lineaverde Z
     stroke(0, 255, 0);
     line(last_time, last_valZ, time, valZ);
+    if((map_values.getPosition().valZ > 3)||(map_values.getPosition().valZ < -3)){
+      
+      fill(0);
+      ellipse(last_time, last_valZ, 50,50);
+      fill(255);
+      text(map_values.getPosition().valZ,last_time, last_valZ);
+      
+    
+    }else{}
+    
     last_valX = valX;
     last_valY = valY;
     last_valZ = valZ;
-    last_time = time;*/
-
-
+    last_time = time;
+    
+    
 
     if (time == 1)
     {
       fill(0);
       rect(0, 0, width, height);
     }
+    
+    
    
   }
 }
-
+void keyPressed() { // Press a key to save the data
+  output.flush(); // Write the remaining data
+  output.close(); // Finish the file
+  exit(); // Stop the program
+}
 void serialEvent(Serial myPort) {
   // read a byte from the serial port:
   int inByte = myPort.read();
@@ -145,7 +179,7 @@ void serialEvent(Serial myPort) {
       valX = serialInArray[14]*256 +  serialInArray[15];
       valY = serialInArray[12]*256 + serialInArray[13];
       valZ = serialInArray[10]*256 + serialInArray[11];
-
+      
       // Send a capital A to request new sensor readings:
       //myPort.write(0x7E);
       // Reset serialCount:
